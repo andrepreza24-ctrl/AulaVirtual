@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { TextInput, Button, Text, SegmentedButtons, HelperText } from 'react-native-paper';
+import { StyleSheet, ScrollView } from 'react-native';
+import { TextInput, Button, Text, SegmentedButtons, HelperText, Snackbar } from 'react-native-paper';
 import * as Crypto from 'expo-crypto';
 import { buscarUsuarioPorEmail, crearUsuario } from '../services/api';
 import { validarEmail, validarContrasena } from '../utils/validaciones';
@@ -14,8 +14,26 @@ export default function Registro({ navigation }) {
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
 
   // Estados para mostrar mensajes de error de validacion
+  // Estados para errores de validación en los campos
   const [errorEmail, setErrorEmail] = useState('');
   const [errorContrasena, setErrorContrasena] = useState('');
+
+  // Estado para el mensaje de retroalimentación visual (Snackbar)
+  const [mensaje, setMensaje] = useState({ visible: false, texto: '', esError: false });
+
+  // Mostrar una notificación visual de éxito o error
+  const mostrarNotificacion = (texto, esError = true) => {
+    setMensaje({ visible: true, texto, esError });
+  };
+
+  // Limpiar los campos y los errores después de completar el registro
+  const limpiarFormulario = () => {
+    setNombre('');
+    setEmail('');
+    setContrasena('');
+    setErrorEmail('');
+    setErrorContrasena('');
+  };
 
   const manejarRegistro = async () => {
     // Valida campos
@@ -26,12 +44,12 @@ export default function Registro({ navigation }) {
     setErrorContrasena(msgErrorContrasena || '');
 
     if (!nombre.trim()) {
-      Alert.alert('Error', 'Ingresa tu nombre completo');
+      mostrarNotificacion('Por favor ingresa tu nombre completo');
       return;
     }
 
     if (msgErrorEmail || msgErrorContrasena) {
-      Alert.alert('Error en el formulario', 'Corrija los errores antes de continuar');
+      mostrarNotificacion('Por favor corrige los errores del formulario');
       return;
     }
 
@@ -40,14 +58,16 @@ export default function Registro({ navigation }) {
       const emailMinuscula = email.trim().toLowerCase();
 
       // Verificar si el correo ya está registrado en la base de datos
+      // Comprobar si el correo ya existe en MockAPI
       const usuarioExistente = await buscarUsuarioPorEmail(emailMinuscula);
       if (usuarioExistente) {
-        Alert.alert('Error', 'El correo electrónico ya está registrado');
+        mostrarNotificacion('El correo electrónico ya está registrado');
         setCargando(false);
         return;
       }
 
       // Generar el hash SHA-256 de la contraseña antes de guardarla
+      // Hash de contraseña
       const passwordHash = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
         contrasena
@@ -63,12 +83,21 @@ export default function Registro({ navigation }) {
       };
 
       await crearUsuario(nuevoUsuario);
-      Alert.alert('¡Éxito!', 'Usuario registrado correctamente', [
-        { text: 'Ir al Login', onPress: () => navigation.navigate('Login') }
-      ]);
+
+      // Mostrar una notificación de éxito y limpiar el formulario después del registro
+      mostrarNotificacion('¡Registro exitoso! Redirigiendo...', false);
+      limpiarFormulario();
+
+      // Redirigir al login después de 1.5 segundos para que el usuario lea la notificación
+      setTimeout(() => {
+        navigation.navigate('Login');
+      }, 1500);
+
     } catch (error) {
-      Alert.alert('Error', 'No se pudo completar el registro. Inténtalo de nuevo.');
+      // Mostrar una notificación si ocurre un problema durante el registro
+      mostrarNotificacion('Error al conectar con el servidor');
     } finally {
+      // Desactivar el estado de carga, tanto si el registro funciona como si falla
       setCargando(false);
     }
   };
@@ -91,6 +120,7 @@ export default function Registro({ navigation }) {
         label="Correo Electrónico"
         value={email}
         onChangeText={(texto) => {
+          // Validar el correo electrónico en tiempo real mientras se escribe
           setEmail(texto);
           setErrorEmail(validarEmail(texto) || '');
         }}
@@ -106,6 +136,7 @@ export default function Registro({ navigation }) {
         label="Contraseña"
         value={contrasena}
         onChangeText={(texto) => {
+          // Validar la contraseña en tiempo real mientras se escribe
           setContrasena(texto);
           setErrorContrasena(validarContrasena(texto) || '');
         }}
@@ -152,6 +183,16 @@ export default function Registro({ navigation }) {
       >
         ¿Ya tienes cuenta? Inicia Sesión
       </Button>
+
+      {/* Snackbar para avisos visuales claros en pantalla */}
+      <Snackbar
+        visible={mensaje.visible}
+        onDismiss={() => setMensaje({ ...mensaje, visible: false })}
+        duration={3000}
+        style={{ backgroundColor: mensaje.esError ? '#B00020' : '#2e7d32' }}
+      >
+        {mensaje.texto}
+      </Snackbar>
     </ScrollView>
   );
 }
