@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { TextInput, Button, Text } from 'react-native-paper';
+import { StyleSheet, ScrollView } from 'react-native';
+import { TextInput, Button, Text, Snackbar } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
 
 export default function Login({ navigation }) {
@@ -9,13 +9,21 @@ export default function Login({ navigation }) {
   const [cargando, setCargando] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
 
-  // Se consume la función de iniciar sesion 
+  // Estado para la alerta visual en pantalla (Snackbar)
+  const [mensaje, setMensaje] = useState({ visible: false, texto: '', esError: false });
+
+  // Se consume la función de iniciar sesion
   const { iniciarSesion } = useContext(AuthContext);
+
+  // Mostrar una notificación visual de éxito o error
+  const mostrarNotificacion = (texto, esError = true) => {
+    setMensaje({ visible: true, texto, esError });
+  };
 
   // Revisa que se envien ls campos delformulario de acceso
   const manejarLogin = async () => {
     if (!email.trim() || !contrasena.trim()) {
-      Alert.alert('Error', 'Por favor ingresa tu correo y contraseña');
+      mostrarNotificacion('Por favor ingresa tu correo y contraseña');
       return;
     }
 
@@ -23,8 +31,9 @@ export default function Login({ navigation }) {
     try {
       // aqui va comparar los hashes para poder obtener el usuario
       await iniciarSesion(email, contrasena);
+      mostrarNotificacion('¡Bienvenido! Iniciando sesión...', false);
     } catch (error) {
-      Alert.alert('Error de acceso', error.message || 'Credenciales incorrectas');
+      mostrarNotificacion(error.message || 'Credenciales incorrectas');
     } finally {
       setCargando(false);
     }
@@ -39,7 +48,6 @@ export default function Login({ navigation }) {
         Iniciar Sesión
       </Text>
 
-      { }
       <TextInput
         label="Correo Electrónico"
         value={email}
@@ -50,7 +58,6 @@ export default function Login({ navigation }) {
         style={estilos.input}
       />
 
-      { }
       <TextInput
         label="Contraseña"
         value={contrasena}
@@ -66,7 +73,6 @@ export default function Login({ navigation }) {
         style={estilos.input}
       />
 
-      { }
       <Button
         mode="contained"
         onPress={manejarLogin}
@@ -77,7 +83,6 @@ export default function Login({ navigation }) {
         Ingresar
       </Button>
 
-      { }
       <Button
         mode="text"
         onPress={() => navigation.navigate('Registro')}
@@ -85,6 +90,16 @@ export default function Login({ navigation }) {
       >
         ¿No tienes cuenta? Regístrate aquí
       </Button>
+
+      {/* Snackbar para mostrar mensajes de éxito o error dentro de la pantalla */}
+      <Snackbar
+        visible={mensaje.visible}
+        onDismiss={() => setMensaje({ ...mensaje, visible: false })}
+        duration={3000}
+        style={{ backgroundColor: mensaje.esError ? '#B00020' : '#2e7d32' }}
+      >
+        {mensaje.texto}
+      </Snackbar>
     </ScrollView>
   );
 }
