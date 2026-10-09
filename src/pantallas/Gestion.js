@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, FlatList } from 'react-native';
-import { TextInput, Button, Text, SegmentedButtons, Card, Snackbar, HelperText } from 'react-native-paper';
-import { obtenerRecursos, crearRecurso } from '../services/api';
+import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { TextInput, Button, Text, SegmentedButtons, Card, Snackbar, HelperText, IconButton } from 'react-native-paper';
+import { obtenerRecursos, crearRecurso, actualizarRecurso, eliminarRecurso } from '../services/api';
 
 export default function Gestion() {
   // Estados para los campos del formulario
+  // Paraa idenificar si se esta creando un recurso nuevo o editando uno existente
+  const [idEditando, setIdEditando] = useState(null); 
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState('libro');
@@ -34,11 +36,14 @@ export default function Gestion() {
     cargarRecursos();
   }, []);
 
+  // Muestra una notificación de éxito o error mediante Snackbar
   const mostrarNotificacion = (texto, esError = false) => {
     setNotificacion({ visible: true, texto, esError });
   };
 
+  // Limpia el formulario y restablece el modo de creación
   const limpiarFormulario = () => {
+    setIdEditando(null);
     setTitulo('');
     setDescripcion('');
     setTipo('libro');
@@ -48,7 +53,20 @@ export default function Gestion() {
     setErrorEnlace('');
   };
 
+  // Prellenar el formulario para editar un recurso existente
+  const seleccionarParaEditar = (recurso) => {
+    setIdEditando(recurso.id);
+    setTitulo(recurso.titulo);
+    setDescripcion(recurso.descripcion || '');
+    setTipo(recurso.tipo || 'libro');
+    setEnlace(recurso.enlace || '');
+    setImagen(recurso.imagen || '');
+    setErrorTitulo('');
+    setErrorEnlace('');
+  };
+
   // Maneja el guardado de un nuevo recurso 
+  // Si existe un id seleccionado actualiza el recurso de lo contrario va cear uno nuevo
   const manejarGuardar = async () => {
     let hayError = false;
 
@@ -73,23 +91,71 @@ export default function Gestion() {
 
     setCargando(true);
     try {
-      const nuevoRecurso = {
-        titulo: titulo.trim(),
-        descripcion: descripcion.trim() || 'Sin descripción disponible.',
-        tipo: tipo,
-        enlace: enlace.trim(),
-        imagen: imagen.trim() || 'https://via.placeholder.com/300x150?text=Recurso+Educativo',
-        calificaciones: [],
-      };
+      if (idEditando) {
+        // EDICION PUT
+        // Se recuperan las calificaciones existentes para no perderlas al actualizar el recurso
+        const recursoOriginal = recursos.find((r) => r.id === idEditando);
+        const datosActualizados = {
+          titulo: titulo.trim(),
+          descripcion: descripcion.trim() || 'Sin descripción disponible.',
+          tipo: tipo,
+          enlace: enlace.trim(),
+          imagen: imagen.trim() || 'https://via.placeholder.com/300x150?text=Recurso+Educativo',
+          calificaciones: recursoOriginal ? recursoOriginal.calificaciones : [],
+        };
 
-      await crearRecurso(nuevoRecurso);
-      mostrarNotificacion('¡Recurso creado exitosamente!', false);
+        await actualizarRecurso(idEditando, datosActualizados);
+        mostrarNotificacion('¡Recurso actualizado correctamente!', false);
+      } else {
+        // MODO POST CREACIÓN
+        const nuevoRecurso = {
+          titulo: titulo.trim(),
+          descripcion: descripcion.trim() || 'Sin descripción disponible.',
+          tipo: tipo,
+          enlace: enlace.trim(),
+          imagen: imagen.trim() || 'https://via.placeholder.com/300x150?text=Recurso+Educativo',
+          calificaciones: [],
+        };
+
+        await crearRecurso(nuevoRecurso);
+        mostrarNotificacion('¡Recurso creado exitosamente!', false);
+      }
+
       limpiarFormulario();
-      cargarRecursos(); 
+      cargarRecursos();
     } catch (error) {
-      mostrarNotificacion('Error al guardar el recurso en el servidor', true);
+      mostrarNotificacion('Error al guardar cambios en el servidor', true);
     } finally {
       setCargando(false);
+    }
+  };
+
+  // Funcion para confirmar y eliminar un recurso
+  const confirmarEliminar = (id, tituloRecurso) => {
+    // Ejecuta la eliminacion del recurso y actualiza la lista 
+    const realizarEliminacion = async () => {
+      try {
+        await eliminarRecurso(id);
+        mostrarNotificacion('Recurso eliminado correctamente', false);
+        if (idEditando === id) limpiarFormulario();
+        cargarRecursos();
+      } catch (error) {
+        mostrarNotificacion('Error al eliminar el recurso', true);
+      }
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm(`¿Estás seguro de eliminar "${tituloRecurso}"?`)) {
+        realizarEliminacion();
+      }
+    } else {
+      Alert.alert(
+        'Confirmar eliminación',
+        `¿Estas seguro de eliminar "${tituloRecurso}"?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Eliminar', style: 'destructive', onPress: realizarEliminacion },
+        ]
+      );
     }
   };
 
@@ -99,11 +165,11 @@ export default function Gestion() {
         Panel de Gestión Docente
       </Text>
 
-      { }
+      {/* Formulario de Creación / Edición */}
       <Card style={estilos.tarjetaFormulario}>
         <Card.Content>
           <Text variant="titleMedium" style={estilos.subtitulo}>
-            Agregar Nuevo Recurso
+            {idEditando ? `Editar Recurso (ID: ${idEditando})` : 'Agregar Nuevo Recurso'}
           </Text>
 
           <TextInput
@@ -164,16 +230,31 @@ export default function Gestion() {
             style={estilos.input}
           />
 
-          <Button
-            mode="contained"
-            icon="plus"
-            onPress={manejarGuardar}
-            loading={cargando}
-            disabled={cargando}
-            style={estilos.boton}
-          >
-            Guardar Recurso
-          </Button>
+          { }
+          <View style={estilos.filaBotones}>
+            <Button
+              mode="contained"
+              icon={idEditando ? 'pencil' : 'plus'}
+              onPress={manejarGuardar}
+              loading={cargando}
+              disabled={cargando}
+              style={[estilos.boton, { flex: 1 }]}
+            >
+              {idEditando ? 'Actualizar' : 'Guardar'}
+            </Button>
+
+            { }
+            {idEditando && (
+              <Button
+                mode="outlined"
+                onPress={limpiarFormulario}
+                disabled={cargando}
+                style={[estilos.boton, { marginLeft: 10 }]}
+              >
+                Cancelar
+              </Button>
+            )}
+          </View>
         </Card.Content>
       </Card>
 
@@ -186,10 +267,29 @@ export default function Gestion() {
           <Card.Title
             title={item.titulo}
             subtitle={`Tipo: ${item.tipo.toUpperCase()} | ID: ${item.id}`}
+            right={(props) => (
+              <View style={{ flexDirection: 'row' }}>
+                { }
+                <IconButton
+                  {...props}
+                  icon="pencil"
+                  iconColor="#1a73e8"
+                  onPress={() => seleccionarParaEditar(item)}
+                />
+                { }
+                <IconButton
+                  {...props}
+                  icon="delete"
+                  iconColor="#d32f2f"
+                  onPress={() => confirmarEliminar(item.id, item.titulo)}
+                />
+              </View>
+            )}
           />
         </Card>
       ))}
 
+      { }
       <Snackbar
         visible={notificacion.visible}
         onDismiss={() => setNotificacion({ ...notificacion, visible: false })}
@@ -237,8 +337,12 @@ const estilos = StyleSheet.create({
   segmento: {
     marginBottom: 12,
   },
-  boton: {
+  filaBotones: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 10,
+  },
+  boton: {
     paddingVertical: 4,
   },
   tarjetaItem: {
