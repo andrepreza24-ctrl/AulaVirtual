@@ -52,3 +52,7 @@ Presionar a para abrir en el emulador de Android Studio.
 Docente: docente@udb.edu.sv / Password123!@
 
 Estudiante: estudiante@udb.edu.sv / Password123!@
+
+***ENLACE DEL VIDEO:
+https://drive.google.com/file/d/1tmqd-pEcOaIEL06EO7zLGPpnBXPcpRRh/view?usp=drive_link
+
