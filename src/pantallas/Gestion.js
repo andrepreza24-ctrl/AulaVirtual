@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
-import { TextInput, Button, Text, SegmentedButtons, Card, Snackbar, HelperText, IconButton } from 'react-native-paper';
+import {
+  TextInput,
+  Button,
+  Text,
+  SegmentedButtons,
+  Card,
+  Snackbar,
+  HelperText,
+  IconButton,
+} from 'react-native-paper';
 import { obtenerRecursos, crearRecurso, actualizarRecurso, eliminarRecurso } from '../services/api';
 
 export default function Gestion() {
   // Estados para los campos del formulario
   // Paraa idenificar si se esta creando un recurso nuevo o editando uno existente
-  const [idEditando, setIdEditando] = useState(null); 
+  const [idEditando, setIdEditando] = useState(null);
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState('libro');
@@ -53,7 +62,7 @@ export default function Gestion() {
     setErrorEnlace('');
   };
 
-  // Prellenar el formulario para editar un recurso existente
+  // Prellena el formulario para editar un recurso existente
   const seleccionarParaEditar = (recurso) => {
     setIdEditando(recurso.id);
     setTitulo(recurso.titulo);
@@ -65,7 +74,7 @@ export default function Gestion() {
     setErrorEnlace('');
   };
 
-  // Maneja el guardado de un nuevo recurso 
+  // Maneja el guardado de un nuevo recurso
   // Si existe un id seleccionado actualiza el recurso de lo contrario va cear uno nuevo
   const manejarGuardar = async () => {
     let hayError = false;
@@ -132,7 +141,7 @@ export default function Gestion() {
 
   // Funcion para confirmar y eliminar un recurso
   const confirmarEliminar = (id, tituloRecurso) => {
-    // Ejecuta la eliminacion del recurso y actualiza la lista 
+    // Ejecuta la eliminacion del recurso y actualiza la lista
     const realizarEliminacion = async () => {
       try {
         await eliminarRecurso(id);
@@ -143,6 +152,7 @@ export default function Gestion() {
         mostrarNotificacion('Error al eliminar el recurso', true);
       }
     };
+
     if (Platform.OS === 'web') {
       if (window.confirm(`¿Estás seguro de eliminar "${tituloRecurso}"?`)) {
         realizarEliminacion();
@@ -165,8 +175,8 @@ export default function Gestion() {
         Panel de Gestión Docente
       </Text>
 
-      {/* Formulario de Creación / Edición */}
-      <Card style={estilos.tarjetaFormulario}>
+      {}
+      <Card style={estilos.tarjetaFormulario} mode="outlined">
         <Card.Content>
           <Text variant="titleMedium" style={estilos.subtitulo}>
             {idEditando ? `Editar Recurso (ID: ${idEditando})` : 'Agregar Nuevo Recurso'}
@@ -179,6 +189,7 @@ export default function Gestion() {
             mode="outlined"
             style={estilos.input}
             error={!!errorTitulo}
+            theme={estilos.temaCampos}
           />
           {!!errorTitulo && <HelperText type="error">{errorTitulo}</HelperText>}
 
@@ -190,6 +201,7 @@ export default function Gestion() {
             multiline
             numberOfLines={2}
             style={estilos.input}
+            theme={estilos.temaCampos}
           />
 
           <Text variant="bodyMedium" style={estilos.etiqueta}>
@@ -206,6 +218,7 @@ export default function Gestion() {
             ]}
             density="small"
             style={estilos.segmento}
+            theme={estilos.temaSegmento}
           />
 
           <TextInput
@@ -217,6 +230,7 @@ export default function Gestion() {
             autoCapitalize="none"
             style={estilos.input}
             error={!!errorEnlace}
+            theme={estilos.temaCampos}
           />
           {!!errorEnlace && <HelperText type="error">{errorEnlace}</HelperText>}
 
@@ -228,6 +242,7 @@ export default function Gestion() {
             keyboardType="url"
             autoCapitalize="none"
             style={estilos.input}
+            theme={estilos.temaCampos}
           />
 
           { }
@@ -239,6 +254,8 @@ export default function Gestion() {
               loading={cargando}
               disabled={cargando}
               style={[estilos.boton, { flex: 1 }]}
+              buttonColor="#00539b"
+              textColor="#ffffff"
             >
               {idEditando ? 'Actualizar' : 'Guardar'}
             </Button>
@@ -249,7 +266,9 @@ export default function Gestion() {
                 mode="outlined"
                 onPress={limpiarFormulario}
                 disabled={cargando}
-                style={[estilos.boton, { marginLeft: 10 }]}
+                style={[estilos.boton, estilos.botonCancelar]}
+                textColor="#00539b"
+                theme={estilos.temaCampos}
               >
                 Cancelar
               </Button>
@@ -262,18 +281,25 @@ export default function Gestion() {
       <Text variant="titleMedium" style={estilos.subtituloLista}>
         Recursos en Plataforma ({recursos.length})
       </Text>
+
       {recursos.map((item) => (
-        <Card key={item.id.toString()} style={estilos.tarjetaItem} mode="outlined">
+        <Card
+          key={item.id.toString()}
+          style={estilos.tarjetaItem}
+          mode="outlined"
+        >
           <Card.Title
             title={item.titulo}
             subtitle={`Tipo: ${item.tipo.toUpperCase()} | ID: ${item.id}`}
+            titleStyle={estilos.tituloRecurso}
+            subtitleStyle={estilos.subtituloRecurso}
             right={(props) => (
-              <View style={{ flexDirection: 'row' }}>
+              <View style={estilos.accionesRecurso}>
                 { }
                 <IconButton
                   {...props}
                   icon="pencil"
-                  iconColor="#1a73e8"
+                  iconColor="#00539b"
                   onPress={() => seleccionarParaEditar(item)}
                 />
                 { }
@@ -294,7 +320,10 @@ export default function Gestion() {
         visible={notificacion.visible}
         onDismiss={() => setNotificacion({ ...notificacion, visible: false })}
         duration={3000}
-        style={{ backgroundColor: notificacion.esError ? '#B00020' : '#2e7d32' }}
+        style={{
+          backgroundColor: notificacion.esError ? '#B00020' : '#00539b',
+          borderRadius: 5,
+        }}
       >
         {notificacion.texto}
       </Snackbar>
@@ -305,37 +334,51 @@ export default function Gestion() {
 const estilos = StyleSheet.create({
   contenedor: {
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
     flexGrow: 1,
   },
   tituloSeccion: {
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#1a73e8',
+    color: '#00539b',
     textAlign: 'center',
   },
   tarjetaFormulario: {
     marginBottom: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
+    borderRadius: 5,
+    borderColor: '#e0e0e0',
   },
   subtitulo: {
     fontWeight: 'bold',
     marginBottom: 12,
+    color: '#00539b',
   },
   subtituloLista: {
     fontWeight: 'bold',
     marginBottom: 10,
     marginTop: 10,
+    color: '#00539b',
+  },
+  tituloRecurso: {
+    fontWeight: '600',
+    color: '#202124',
+  },
+  subtituloRecurso: {
+    color: '#5f6368',
   },
   input: {
     marginBottom: 10,
+    backgroundColor: '#ffffff',
   },
   etiqueta: {
     marginTop: 5,
     marginBottom: 5,
+    color: '#202124',
   },
   segmento: {
     marginBottom: 12,
+    borderRadius: 5,
   },
   filaBotones: {
     flexDirection: 'row',
@@ -344,9 +387,32 @@ const estilos = StyleSheet.create({
   },
   boton: {
     paddingVertical: 4,
+    borderRadius: 5,
+  },
+  botonCancelar: {
+    marginLeft: 10,
+    borderColor: '#00539b',
   },
   tarjetaItem: {
     marginBottom: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
+    borderRadius: 5,
+    borderColor: '#e0e0e0',
+  },
+  accionesRecurso: {
+    flexDirection: 'row',
+  },
+  temaCampos: {
+    colors: {
+      primary: '#00539b',
+      outline: '#00539b',
+    },
+  },
+  temaSegmento: {
+    colors: {
+      secondaryContainer: '#00539b',
+      onSecondaryContainer: '#ffffff',
+      outline: '#00539b',
+    },
   },
 });

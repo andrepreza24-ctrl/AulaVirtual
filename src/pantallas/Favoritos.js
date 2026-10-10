@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, useWindowDimensions } from 'react-native';
 import { Text, ActivityIndicator, Snackbar } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -13,6 +13,10 @@ export default function Favoritos() {
   const [cargando, setCargando] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
   const [notificacion, setNotificacion] = useState({ visible: false, texto: '' });
+
+  const { width } = useWindowDimensions();
+  const numColumnas = width > 900 ? 3 : width > 600 ? 2 : 1;
+  const anchoColumna = `${100 / numColumnas}%`;
 
   // carga los recursos de la api
   const cargarDatos = async () => {
@@ -98,7 +102,7 @@ export default function Favoritos() {
   if (cargando) {
     return (
       <View style={estilos.pantallaCarga}>
-        <ActivityIndicator size="large" color="#1a73e8" />
+        <ActivityIndicator size="large" color="#00539b" />
         <Text style={{ marginTop: 10 }}>Cargando tus favoritos...</Text>
       </View>
     );
@@ -107,16 +111,28 @@ export default function Favoritos() {
   return (
     <View style={estilos.contenedor}>
       <FlatList
+        key={numColumnas}
         data={recursosFavoritos}
+        numColumns={numColumnas}
         keyExtractor={(item) => item.id.toString()}
+        columnWrapperStyle={numColumnas > 1 ? estilos.filaGrid : null}
         renderItem={({ item }) => (
-          <TarjetaRecurso
-            recurso={item}
-            esFavorito={true}
-            alPresionarFavorito={manejarFavorito}
-            alCalificar={manejarCalificacion}
-            idUsuarioActual={usuario?.id}
-          />
+          <View
+            style={[
+              estilos.contenedorTarjeta,
+              numColumnas > 1
+                ? { width: anchoColumna }
+                : { width: '100%' },
+            ]}
+          >
+            <TarjetaRecurso
+              recurso={item}
+              esFavorito={true}
+              alPresionarFavorito={manejarFavorito}
+              alCalificar={manejarCalificacion}
+              idUsuarioActual={usuario?.id}
+            />
+          </View>
         )}
         contentContainerStyle={estilos.lista}
         ListEmptyComponent={
@@ -130,7 +146,12 @@ export default function Favoritos() {
           </View>
         }
         refreshControl={
-          <RefreshControl refreshing={refrescando} onRefresh={manejarRefresco} />
+          <RefreshControl
+            refreshing={refrescando}
+            onRefresh={manejarRefresco}
+            colors={['#00539b']}
+            tintColor="#00539b"
+          />
         }
       />
 
@@ -148,7 +169,7 @@ export default function Favoritos() {
 const estilos = StyleSheet.create({
   contenedor: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   pantallaCarga: {
     flex: 1,
@@ -156,7 +177,15 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
   },
   lista: {
-    padding: 16,
+    paddingHorizontal: 6,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  filaGrid: {
+    justifyContent: 'flex-start',
+  },
+  contenedorTarjeta: {
+    paddingHorizontal: 5,
   },
   contenedorVacio: {
     alignItems: 'center',

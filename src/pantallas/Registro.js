@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView } from 'react-native';
-import { TextInput, Button, Text, SegmentedButtons, HelperText, Snackbar } from 'react-native-paper';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { TextInput, Button, Text, SegmentedButtons, HelperText, Snackbar, Card } from 'react-native-paper';
 import * as Crypto from 'expo-crypto';
 import { buscarUsuarioPorEmail, crearUsuario } from '../services/api';
 import { validarEmail, validarContrasena } from '../utils/validaciones';
@@ -13,20 +13,18 @@ export default function Registro({ navigation }) {
   const [cargando, setCargando] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
 
-  // Estados para mostrar mensajes de error de validacion
-  // Estados para errores de validación en los campos
+  // y estados para errores de validación en los campos
   const [errorEmail, setErrorEmail] = useState('');
   const [errorContrasena, setErrorContrasena] = useState('');
 
-  // Estado para el mensaje de retroalimentación visual (Snackbar)
+  // Mostrar el mensaje de alertas
   const [mensaje, setMensaje] = useState({ visible: false, texto: '', esError: false });
 
-  // Mostrar una notificación visual de éxito o error
   const mostrarNotificacion = (texto, esError = true) => {
     setMensaje({ visible: true, texto, esError });
   };
 
-  // Limpiar los campos y los errores después de completar el registro
+  // Limpia los campos y los errores despues de completar el registro
   const limpiarFormulario = () => {
     setNombre('');
     setEmail('');
@@ -57,8 +55,8 @@ export default function Registro({ navigation }) {
     try {
       const emailMinuscula = email.trim().toLowerCase();
 
-      // Verificar si el correo ya está registrado en la base de datos
-      // Comprobar si el correo ya existe en MockAPI
+      // Verifica si el correo ya esta rgistrado 
+      // Comprueba si el correo ya existe en mockAPI
       const usuarioExistente = await buscarUsuarioPorEmail(emailMinuscula);
       if (usuarioExistente) {
         mostrarNotificacion('El correo electrónico ya está registrado');
@@ -66,8 +64,7 @@ export default function Registro({ navigation }) {
         return;
       }
 
-      // Generar el hash SHA-256 de la contraseña antes de guardarla
-      // Hash de contraseña
+      // Genera el hash SHA-256 de la contraseña antes de guardarla
       const passwordHash = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
         contrasena
@@ -83,108 +80,122 @@ export default function Registro({ navigation }) {
       };
 
       await crearUsuario(nuevoUsuario);
-
-      // Mostrar una notificación de éxito y limpiar el formulario después del registro
       mostrarNotificacion('¡Registro exitoso! Redirigiendo...', false);
       limpiarFormulario();
 
-      // Redirigir al login después de 1.5 segundos para que el usuario lea la notificación
       setTimeout(() => {
         navigation.navigate('Login');
       }, 1500);
 
     } catch (error) {
-      // Mostrar una notificación si ocurre un problema durante el registro
       mostrarNotificacion('Error al conectar con el servidor');
     } finally {
-      // Desactivar el estado de carga, tanto si el registro funciona como si falla
       setCargando(false);
     }
   };
 
   return (
     <ScrollView contentContainerStyle={estilos.contenedor}>
-      <Text variant="headlineMedium" style={estilos.titulo}>
-        Crear Cuenta
-      </Text>
+      <Card style={estilos.tarjetaCard} >
+        <Card.Content>
+          <Text variant="headlineSmall" style={estilos.titulo}>
+            Crear Cuenta
+          </Text>
 
-      <TextInput
-        label="Nombre Completo"
-        value={nombre}
-        onChangeText={setNombre}
-        mode="outlined"
-        style={estilos.input}
-      />
-
-      <TextInput
-        label="Correo Electrónico"
-        value={email}
-        onChangeText={(texto) => {
-          // Validar el correo electrónico en tiempo real mientras se escribe
-          setEmail(texto);
-          setErrorEmail(validarEmail(texto) || '');
-        }}
-        mode="outlined"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        style={estilos.input}
-        error={!!errorEmail}
-      />
-      {!!errorEmail && <HelperText type="error">{errorEmail}</HelperText>}
-
-      <TextInput
-        label="Contraseña"
-        value={contrasena}
-        onChangeText={(texto) => {
-          // Validar la contraseña en tiempo real mientras se escribe
-          setContrasena(texto);
-          setErrorContrasena(validarContrasena(texto) || '');
-        }}
-        mode="outlined"
-        secureTextEntry={!mostrarContrasena}
-        right={
-          <TextInput.Icon
-            icon={mostrarContrasena ? 'eye-off' : 'eye'}
-            onPress={() => setMostrarContrasena(!mostrarContrasena)}
+          <TextInput
+            label="Nombre Completo"
+            value={nombre}
+            onChangeText={setNombre}
+            mode="outlined"
+            left={<TextInput.Icon icon="account" />}
+            style={estilos.input}
+            outlineStyle={estilos.inputBorde}
           />
-        }
-        style={estilos.input}
-        error={!!errorContrasena}
-      />
-      {!!errorContrasena && <HelperText type="error">{errorContrasena}</HelperText>}
 
-      <Text variant="bodyMedium" style={estilos.etiquetaRol}>
-        Selecciona tu Rol:
-      </Text>
-      <SegmentedButtons
-        value={rol}
-        onValueChange={setRol}
-        buttons={[
-          { value: 'estudiante', label: 'Estudiante' },
-          { value: 'docente', label: 'Docente' },
-        ]}
-        style={estilos.segmento}
-      />
+          <TextInput
+            label="Correo Electrónico"
+            value={email}
+            onChangeText={(texto) => {
+              // Validar el correo electrónico en tiempo real mientras se escribe
+              setEmail(texto);
+              setErrorEmail(validarEmail(texto) || '');
+            }}
+            mode="outlined"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            left={<TextInput.Icon icon="email" />}
+            style={estilos.input}
+            outlineStyle={estilos.inputBorde}
+            error={!!errorEmail}
+          />
+          {!!errorEmail && <HelperText type="error">{errorEmail}</HelperText>}
 
-      <Button
-        mode="contained"
-        onPress={manejarRegistro}
-        loading={cargando}
-        disabled={cargando}
-        style={estilos.boton}
-      >
-        Registrarse
-      </Button>
+          <TextInput
+            label="Contraseña"
+            value={contrasena}
+            onChangeText={(texto) => {
+              // Valida la contraseña en tiempo real mientras se escribe
+              setContrasena(texto);
+              setErrorContrasena(validarContrasena(texto) || '');
+            }}
+            mode="outlined"
+            secureTextEntry={!mostrarContrasena}
+            left={<TextInput.Icon icon="key" />}
+            right={
+              <TextInput.Icon
+                icon={mostrarContrasena ? 'eye-off' : 'eye'}
+                onPress={() => setMostrarContrasena(!mostrarContrasena)}
+              />
+            }
+            style={estilos.input}
+            outlineStyle={estilos.inputBorde}
+            error={!!errorContrasena}
+          />
+          {!!errorContrasena && <HelperText type="error">{errorContrasena}</HelperText>}
 
-      <Button
-        mode="text"
-        onPress={() => navigation.navigate('Login')}
-        style={estilos.botonTexto}
-      >
-        ¿Ya tienes cuenta? Inicia Sesión
-      </Button>
+          <Text variant="bodyMedium" style={estilos.etiquetaRol}>
+            Selecciona tu Rol:
+          </Text> 
+          <SegmentedButtons
+          value={rol}
+          onValueChange={setRol}
+          buttons={[
+            { value: 'estudiante', label: 'Estudiante' },
+            { value: 'docente', label: 'Docente' },
+          ]}
+          style={estilos.segmento}
+          theme={{ 
+            colors: {
+              secondaryContainer: '#00539b',
+              onSecondaryContainer: '#ffffff',
+              outline: '#00539b',
+            },
+            }}
+            />
 
-      {/* Snackbar para avisos visuales claros en pantalla */}
+          <Button
+            mode="contained"
+            onPress={manejarRegistro}
+            loading={cargando}
+            disabled={cargando}
+            style={estilos.boton}
+            labelStyle={estilos.labelBoton}
+          >
+            Registrarse
+          </Button>
+
+          <Button
+            mode="text"
+            onPress={() => navigation.navigate('Login')}
+            style={estilos.botonTexto}
+            labelStyle={{ color: '#0066b2' }}
+          >
+            ¿Ya tienes cuenta? Inicia Sesión
+          </Button>
+        </Card.Content>
+      </Card>
+
+      { }
       <Snackbar
         visible={mensaje.visible}
         onDismiss={() => setMensaje({ ...mensaje, visible: false })}
@@ -199,29 +210,54 @@ export default function Registro({ navigation }) {
 
 const estilos = StyleSheet.create({
   contenedor: {
-    padding: 20,
-    justifyContent: 'center',
     flexGrow: 1,
-    backgroundColor: '#fff',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#f4f6f9',
+  },
+  tarjetaCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 5,
+    borderColor: '#dcdcdc',
+    maxWidth: 450,
+    width: '100%',
+    alignSelf: 'center',
+    paddingVertical: 10,
   },
   titulo: {
     textAlign: 'center',
-    marginBottom: 20,
     fontWeight: 'bold',
+    color: '#00539b',
+  },
+  subtitulo: {
+    textAlign: 'center',
+    color: '#666',
+    marginBottom: 24,
   },
   input: {
-    marginBottom: 10,
+    marginBottom: 6,
+    backgroundColor: '#fff',
+  },
+  inputBorde: {
+    borderRadius: 5,
   },
   etiquetaRol: {
     marginTop: 10,
     marginBottom: 8,
+    color: '#444',
   },
   segmento: {
     marginBottom: 20,
   },
   boton: {
-    marginTop: 10,
-    paddingVertical: 5,
+    marginTop: 16,
+    backgroundColor: '#0066b2',
+    borderRadius: 5,
+    paddingVertical: 4,
+  },
+  labelBoton: {
+    fontSize: 15,
+    fontWeight: 'bold',
   },
   botonTexto: {
     marginTop: 10,

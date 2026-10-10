@@ -1,39 +1,59 @@
 import React, { useState, useContext } from 'react';
-import { StyleSheet, ScrollView } from 'react-native';
-import { TextInput, Button, Text, Snackbar } from 'react-native-paper';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { TextInput, Button, Text, HelperText, Snackbar, Card } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
 
 export default function Login({ navigation }) {
-  const [email, setEmail] = useState('');
-  const [contrasena, setContrasena] = useState('');
-  const [cargando, setCargando] = useState(false);
-  const [mostrarContrasena, setMostrarContrasena] = useState(false);
-
-  // Estado para la alerta visual en pantalla (Snackbar)
-  const [mensaje, setMensaje] = useState({ visible: false, texto: '', esError: false });
-
   // Se consume la función de iniciar sesion
   const { iniciarSesion } = useContext(AuthContext);
 
-  // Mostrar una notificación visual de éxito o error
-  const mostrarNotificacion = (texto, esError = true) => {
-    setMensaje({ visible: true, texto, esError });
-  };
+  const [correo, setCorreo] = useState('');
+  const [password, setPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [cargando, setCargando] = useState(false);
+
+  // Estados para mostrar errores individuales en los campos del formulario
+  const [errorCorreo, setErrorCorreo] = useState('');
+  const [errorPassword, setErrorPassword] = useState('');
+
+  // Estado para mostrar notificaciones mediante Snackbar
+  const [notificacion, setNotificacion] = useState({ visible: false, texto: '' });
 
   // Revisa que se envien ls campos delformulario de acceso
   const manejarLogin = async () => {
-    if (!email.trim() || !contrasena.trim()) {
-      mostrarNotificacion('Por favor ingresa tu correo y contraseña');
-      return;
+    let hayError = false;
+
+    // Valida que el correo o carnet no esté vacío
+    if (!correo.trim()) {
+      setErrorCorreo('Ingresa tu correo o carnet');
+      hayError = true;
+    } else {
+      setErrorCorreo('');
     }
+
+    // Valida que la contraseña no esté vacía
+    if (!password) {
+      setErrorPassword('Ingresa tu contraseña');
+      hayError = true;
+    } else {
+      setErrorPassword('');
+    }
+
+    // Evita enviar la solicitud si existen errores de validación
+    if (hayError) return;
 
     setCargando(true);
     try {
       // aqui va comparar los hashes para poder obtener el usuario
-      await iniciarSesion(email, contrasena);
-      mostrarNotificacion('¡Bienvenido! Iniciando sesión...', false);
-    } catch (error) {
-      mostrarNotificacion(error.message || 'Credenciales incorrectas');
+      const exito = await iniciarSesion(correo.trim(), password);
+
+      // Muestra un mensaje si las credenciales no son válidas
+      if (!exito) {
+        setNotificacion({ visible: true, texto: 'Credenciales incorrectas' });
+      }
+    } catch (err) {
+      // Notifica si ocurre un problema al conectar con el servidor
+      setNotificacion({ visible: true, texto: 'Error al conectar con el servidor' });
     } finally {
       setCargando(false);
     }
@@ -41,64 +61,74 @@ export default function Login({ navigation }) {
 
   return (
     <ScrollView contentContainerStyle={estilos.contenedor}>
-      <Text variant="headlineMedium" style={estilos.titulo}>
-        Aula Virtual UDB
-      </Text>
-      <Text variant="titleMedium" style={estilos.subtitulo}>
-        Iniciar Sesión
-      </Text>
+      <Card style={estilos.tarjetaCard} >
+        <Card.Content>
+          <Text variant="headlineSmall" style={estilos.titulo}>
+            Aula Virtual UDB
+          </Text>
 
-      <TextInput
-        label="Correo Electrónico"
-        value={email}
-        onChangeText={setEmail}
-        mode="outlined"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        style={estilos.input}
-      />
-
-      <TextInput
-        label="Contraseña"
-        value={contrasena}
-        onChangeText={setContrasena}
-        mode="outlined"
-        secureTextEntry={!mostrarContrasena}
-        right={
-          <TextInput.Icon
-            icon={mostrarContrasena ? 'eye-off' : 'eye'}
-            onPress={() => setMostrarContrasena(!mostrarContrasena)}
+          <TextInput
+            label="Correo"
+            value={correo}
+            onChangeText={setCorreo}
+            mode="outlined"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            left={<TextInput.Icon icon="account" />}
+            style={estilos.input}
+            outlineStyle={estilos.inputBorde}
+            error={!!errorCorreo}
           />
-        }
-        style={estilos.input}
-      />
+          {!!errorCorreo && <HelperText type="error">{errorCorreo}</HelperText>}
 
-      <Button
-        mode="contained"
-        onPress={manejarLogin}
-        loading={cargando}
-        disabled={cargando}
-        style={estilos.boton}
-      >
-        Ingresar
-      </Button>
+          <TextInput
+            label="Contraseña"
+            value={password}
+            onChangeText={setPassword}
+            mode="outlined"
+            secureTextEntry={!mostrarPassword}
+            left={<TextInput.Icon icon="key" />}
+            right={
+              <TextInput.Icon
+                icon={mostrarPassword ? 'eye-off' : 'eye'}
+                onPress={() => setMostrarPassword(!mostrarPassword)}
+              />
+            }
+            style={estilos.input}
+            outlineStyle={estilos.inputBorde}
+            error={!!errorPassword}
+          />
+          {!!errorPassword && <HelperText type="error">{errorPassword}</HelperText>}
 
-      <Button
-        mode="text"
-        onPress={() => navigation.navigate('Registro')}
-        style={estilos.botonTexto}
-      >
-        ¿No tienes cuenta? Regístrate aquí
-      </Button>
+          <Button
+            mode="contained"
+            onPress={manejarLogin}
+            loading={cargando}
+            disabled={cargando}
+            style={estilos.boton}
+            labelStyle={estilos.labelBoton}
+          >
+            Iniciar Sesión
+          </Button>
 
-      {/* Snackbar para mostrar mensajes de éxito o error dentro de la pantalla */}
+          <Button
+            mode="text"
+            onPress={() => navigation.navigate('Registro')}
+            style={estilos.botonTexto}
+            labelStyle={{ color: '#0066b2' }}
+          >
+            ¿No tienes cuenta? Regístrate aquí
+          </Button>
+        </Card.Content>
+      </Card>
+
+      { }
       <Snackbar
-        visible={mensaje.visible}
-        onDismiss={() => setMensaje({ ...mensaje, visible: false })}
+        visible={notificacion.visible}
+        onDismiss={() => setNotificacion({ ...notificacion, visible: false })}
         duration={3000}
-        style={{ backgroundColor: mensaje.esError ? '#B00020' : '#2e7d32' }}
       >
-        {mensaje.texto}
+        {notificacion.texto}
       </Snackbar>
     </ScrollView>
   );
@@ -106,28 +136,46 @@ export default function Login({ navigation }) {
 
 const estilos = StyleSheet.create({
   contenedor: {
-    padding: 20,
-    justifyContent: 'center',
     flexGrow: 1,
-    backgroundColor: '#fff',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#f4f6f9',
+  },
+  tarjetaCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 5, 
+    borderColor: '#dcdcdc',
+    maxWidth: 450,
+    width: '100%',
+    alignSelf: 'center',
+    paddingVertical: 10,
   },
   titulo: {
     textAlign: 'center',
     fontWeight: 'bold',
-    color: '#1a73e8',
-    marginBottom: 5,
+    color: '#00539b',
   },
   subtitulo: {
     textAlign: 'center',
-    marginBottom: 20,
-    color: '#555',
+    color: '#666',
+    marginBottom: 24,
   },
   input: {
-    marginBottom: 15,
+    marginBottom: 6,
+    backgroundColor: '#fff',
+  },
+  inputBorde: {
+    borderRadius: 5,
   },
   boton: {
-    marginTop: 10,
-    paddingVertical: 5,
+    marginTop: 16,
+    backgroundColor: '#0066b2', 
+    borderRadius: 5, 
+    paddingVertical: 4,
+  },
+  labelBoton: {
+    fontSize: 15,
+    fontWeight: 'bold',
   },
   botonTexto: {
     marginTop: 10,
