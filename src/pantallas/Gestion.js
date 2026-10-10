@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
-import {
-  TextInput,
-  Button,
-  Text,
-  SegmentedButtons,
-  Card,
-  Snackbar,
-  HelperText,
-  IconButton,
+import {TextInput,Button,Text,SegmentedButtons,Card,Snackbar,HelperText,IconButton,
 } from 'react-native-paper';
 import { obtenerRecursos, crearRecurso, actualizarRecurso, eliminarRecurso } from '../services/api';
 

@@ -126,7 +126,7 @@ export default function Recursos() {
 
       const coincideBusqueda =
         !texto ||
-        recurso.id.toString().toLowerCase().includes(texto) ||
+        recurso.id.oString().toLowerCase().includes(texto) ||
         recurso.titulo.toLowerCase().includes(texto) ||
         recurso.tipo.toLowerCase().includes(texto);
 

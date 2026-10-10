@@ -23,9 +23,9 @@ export default function Login({ navigation }) {
   const manejarLogin = async () => {
     let hayError = false;
 
-    // Valida que el correo o carnet no esté vacío
+    // Valida que el correo no esté vacío
     if (!correo.trim()) {
-      setErrorCorreo('Ingresa tu correo o carnet');
+      setErrorCorreo('Ingresa tu correo');
       hayError = true;
     } else {
       setErrorCorreo('');
